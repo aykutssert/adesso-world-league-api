@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- The feasibility check is an implementation detail of the engine, but it deserves its own tests. -->
+    <InternalsVisibleTo Include="AdessoWorldLeague.UnitTests" />
+  </ItemGroup>
+
+</Project>

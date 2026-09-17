@@ -1,0 +1,54 @@
+@host = http://localhost:8080
+
+### Health probe
+GET {{host}}/health
+
+### Draw into 8 groups of 4 (each group holds four different countries)
+# @name createDrawEightGroups
+POST {{host}}/api/draws
+Content-Type: application/json
+
+{
+  "groupCount": 8,
+  "firstName": "Aykut",
+  "lastName": "Sert"
+}
+
+### Draw into 4 groups of 8 (each group holds one team of every country)
+POST {{host}}/api/draws
+Content-Type: application/json
+
+{
+  "groupCount": 4,
+  "firstName": "Ayşe",
+  "lastName": "Yılmaz"
+}
+
+### Read back the draw created above
+GET {{host}}/api/draws/{{createDrawEightGroups.response.body.drawId}}
+
+### List the draw history, newest first
+GET {{host}}/api/draws?pageNumber=1&pageSize=10
+
+### Rejected: the league only supports 4 or 8 groups -> 400 with a field level error
+POST {{host}}/api/draws
+Content-Type: application/json
+
+{
+  "groupCount": 5,
+  "firstName": "Aykut",
+  "lastName": "Sert"
+}
+
+### Rejected: the name of the person drawing is required -> 400
+POST {{host}}/api/draws
+Content-Type: application/json
+
+{
+  "groupCount": 8,
+  "firstName": "",
+  "lastName": ""
+}
+
+### Unknown draw -> 404 with the domain error code
+GET {{host}}/api/draws/00000000-0000-0000-0000-000000000000

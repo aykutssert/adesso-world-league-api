@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AdessoWorldLeague.Api/AdessoWorldLeague.Api.csproj" />
+    <Project Path="src/AdessoWorldLeague.Application/AdessoWorldLeague.Application.csproj" />
+    <Project Path="src/AdessoWorldLeague.Domain/AdessoWorldLeague.Domain.csproj" />
+    <Project Path="src/AdessoWorldLeague.Infrastructure/AdessoWorldLeague.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AdessoWorldLeague.IntegrationTests/AdessoWorldLeague.IntegrationTests.csproj" />
+    <Project Path="tests/AdessoWorldLeague.UnitTests/AdessoWorldLeague.UnitTests.csproj" />
+  </Folder>
+</Solution>

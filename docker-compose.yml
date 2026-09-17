@@ -1,0 +1,65 @@
+name: adesso-world-league
+
+services:
+  database:
+    image: postgres:18-alpine
+    container_name: adesso-world-league-db
+    environment:
+      POSTGRES_DB: adesso_world_league
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # Published on 5433 by default so a PostgreSQL already running on the host does not clash.
+      # Override with DB_PORT=… in a .env file or the environment.
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      # postgres:18+ expects a single mount at /var/lib/postgresql; the data lives in a version subdirectory.
+      - database-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d adesso_world_league"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adesso-world-league-api
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__Database: "Host=database;Port=5432;Database=adesso_world_league;Username=postgres;Password=postgres"
+      Database__MigrateOnStartup: "true"
+    ports:
+      # Override with API_PORT=… if 8080 is taken on your machine.
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Runs the full test suite inside a container, so no local SDK is needed:
+  #   docker compose --profile test run --rm tests
+  # The integration tests start their own PostgreSQL through Testcontainers, which is why the
+  # container is given access to the host's Docker socket.
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  database-data:

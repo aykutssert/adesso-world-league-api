@@ -1,0 +1,6 @@
+@AdessoWorldLeague.Api_HostAddress = http://localhost:5237
+
+GET {{AdessoWorldLeague.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

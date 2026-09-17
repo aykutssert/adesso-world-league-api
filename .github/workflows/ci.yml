@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      # Warnings are errors in this repository, so a successful build already proves the code is clean.
+      - name: Unit tests
+        run: dotnet test --project tests/AdessoWorldLeague.UnitTests --configuration Release --no-build
+
+      # The integration suite starts PostgreSQL through Testcontainers; the runner ships with Docker.
+      - name: Integration tests
+        run: dotnet test --project tests/AdessoWorldLeague.IntegrationTests --configuration Release --no-build
+
+  docker:
+    name: Container image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build the stack
+        run: docker compose build
+
+      - name: Smoke test the stack
+        run: |
+          docker compose up -d --wait --wait-timeout 180
+          curl --fail --silent --show-error http://localhost:8080/health
+          curl --fail --silent --show-error \
+            -X POST http://localhost:8080/api/draws \
+            -H 'Content-Type: application/json' \
+            -d '{"groupCount":8,"firstName":"CI","lastName":"Runner"}' | tee response.json
+          python3 - <<'PY'
+          import json
+
+          with open("response.json", encoding="utf-8") as file:
+              draw = json.load(file)
+
+          groups = draw["groups"]
+          assert len(groups) == 8, groups
+          assert all(len(group["teams"]) == 4 for group in groups), groups
+
+          names = [team["name"] for group in groups for team in group["teams"]]
+          assert len(names) == 32 and len(set(names)) == 32, names
+
+          print("smoke test passed:", len(groups), "groups,", len(names), "teams")
+          PY
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

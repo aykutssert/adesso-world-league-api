@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>adesso-world-league-api</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AdessoWorldLeague.Application\AdessoWorldLeague.Application.csproj" />
+    <ProjectReference Include="..\AdessoWorldLeague.Infrastructure\AdessoWorldLeague.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AdessoWorldLeague.IntegrationTests" />
+  </ItemGroup>
+
+</Project>
